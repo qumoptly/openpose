@@ -1,6 +1,9 @@
 #ifndef OPENPOSE_CORE_DATUM_HPP
 #define OPENPOSE_CORE_DATUM_HPP
 
+#ifdef USE_EIGEN
+    #include <Eigen/Core>
+#endif
 #include <opencv2/core/core.hpp> // cv::Mat
 #include <openpose/core/common.hpp>
 
@@ -17,8 +20,12 @@ namespace op
         // ---------------------------------------- ID parameters ---------------------------------------- //
         unsigned long long id; /**< Datum ID. Internally used to sort the Datums if multi-threading is used. */
 
+        unsigned long long subId; /**< Datum sub-ID. Internally used to sort the Datums if multi-threading is used. */
+
+        unsigned long long subIdMax; /**< Datum maximum sub-ID. Used to sort the Datums if multi-threading is used. */
+
         /**
-         * Name used when saving the data to disk (e.g. `write_images` or `write_keypoint` flags in the demo).
+         * Name used when saving the data to disk (e.g., `write_images` or `write_keypoint` flags in the demo).
          */
         std::string name;
 
@@ -50,24 +57,29 @@ namespace op
         /**
          * Rendered image in Array<float> format.
          * It consists of a blending of the cvInputData and the pose/body part(s) heatmap/PAF(s).
-         * If rendering is disabled (e.g. `no_render_pose` flag in the demo), outputData will be empty.
+         * If rendering is disabled (e.g., `no_render_pose` flag in the demo), outputData will be empty.
          * Size: 3 x output_net_height x output_net_width
          */
         Array<float> outputData;
 
         /**
          * Rendered image in cv::Mat uchar format.
-         * It has been resized to the desired output resolution (e.g. `resolution` flag in the demo).
+         * It has been resized to the desired output resolution (e.g., `resolution` flag in the demo).
          * If outputData is empty, cvOutputData will also be empty.
          * Size: (output_height x output_width) x 3 channels
          */
         cv::Mat cvOutputData;
 
+        /**
+         * Rendered 3D image in cv::Mat uchar format.
+         */
+        cv::Mat cvOutputData3D;
+
         // ------------------------------ Resulting Array<float> data parameters ------------------------------ //
         /**
          * Body pose (x,y,score) locations for each person in the image.
-         * It has been resized to the desired output resolution (e.g. `resolution` flag in the demo).
-         * Size: #people x #body parts (e.g. 18 for COCO or 15 for MPI) x 3 ((x,y) coordinates + score)
+         * It has been resized to the desired output resolution (e.g., `resolution` flag in the demo).
+         * Size: #people x #body parts (e.g., 18 for COCO or 15 for MPI) x 3 ((x,y) coordinates + score)
          */
         Array<float> poseKeypoints;
 
@@ -84,7 +96,7 @@ namespace op
          * Body pose global confidence/score for each person in the image.
          * It does not only consider the score of each body keypoint, but also the score of each PAF association.
          * Optimized for COCO evaluation metric.
-         * It will highly penalyze people with missing body parts (e.g. cropped people on the borders of the image).
+         * It will highly penalyze people with missing body parts (e.g., cropped people on the borders of the image).
          * If poseKeypoints is empty, poseScores will also be empty.
          * Size: #people
          */
@@ -99,7 +111,7 @@ namespace op
          * Order heatmaps: body parts + background (as appears in POSE_BODY_PART_MAPPING) + (x,y) channel of each PAF
          * (sorted as appears in POSE_BODY_PART_PAIRS). See `pose/poseParameters.hpp`.
          * The user can choose the heatmaps normalization: ranges [0, 1], [-1, 1] or [0, 255]. Check the
-         * `heatmaps_scale` flag in the examples/tutorial_wrapper/ for more details.
+         * `heatmaps_scale` flag in {OpenPose_path}doc/demo_overview.md for more details.
          * Size: #heatmaps x output_net_height x output_net_width
          */
         Array<float> poseHeatMaps;
@@ -161,7 +173,7 @@ namespace op
         // ---------------------------------------- 3-D Reconstruction parameters ---------------------------------------- //
         /**
          * Body pose (x,y,z,score) locations for each person in the image.
-         * Size: #people x #body parts (e.g. 18 for COCO or 15 for MPI) x 4 ((x,y,z) coordinates + score)
+         * Size: #people x #body parts (e.g., 18 for COCO or 15 for MPI) x 4 ((x,y,z) coordinates + score)
          */
         Array<float> poseKeypoints3D;
 
@@ -195,6 +207,14 @@ namespace op
          */
         cv::Mat cameraIntrinsics;
 
+        /**
+         * If it is not empty, OpenPose will not run its internal body pose estimation network and will instead use
+         * this data as the substitute of its network. The size of this element must match the size of the output of
+         * its internal network, or it will lead to core dumped (segmentation) errors. You can modify the pose
+         * estimation flags to match the dimension of both elements (e.g., `--net_resolution`, `--scale_number`, etc.).
+         */
+        Array<float> poseNetOutput;
+
         // ---------------------------------------- Other (internal) parameters ---------------------------------------- //
         /**
          * Scale ratio between the input Datum::cvInputData and the net input size.
@@ -227,6 +247,29 @@ namespace op
          * 1 and "Neck").
          */
         std::pair<int, std::string> elementRendered;
+
+        // 3D/Adam parameters (experimental code not meant to be publicly used)
+        #ifdef USE_3D_ADAM_MODEL
+            // Adam/Unity params
+            std::vector<double> adamPosePtr;
+            int adamPoseRows;
+            std::vector<double> adamTranslationPtr;
+            std::vector<double> vtVecPtr;
+            int vtVecRows;
+            std::vector<double> j0VecPtr;
+            int j0VecRows;
+            std::vector<double> adamFaceCoeffsExpPtr;
+            int adamFaceCoeffsExpRows;
+            #ifdef USE_EIGEN
+                // Adam/Unity params
+                Eigen::Matrix<double, 62, 3, Eigen::RowMajor> adamPose;
+                Eigen::Vector3d adamTranslation;
+                // Adam params (Jacobians)
+                Eigen::Matrix<double, Eigen::Dynamic, 1> vtVec;
+                Eigen::Matrix<double, Eigen::Dynamic, 1> j0Vec;
+                Eigen::VectorXd adamFaceCoeffsExp;
+            #endif
+        #endif
 
 
 
@@ -300,7 +343,8 @@ namespace op
          */
         inline bool operator<(const Datum& datum) const
         {
-            return id < datum.id;
+            // return id < datum.id;
+            return id < datum.id || (id == datum.id && subId < datum.subId);
         }
         /**
          * Greater comparison operator.
@@ -309,7 +353,8 @@ namespace op
          */
         inline bool operator>(const Datum& datum) const
         {
-            return id > datum.id;
+            // return id > datum.id;
+            return id > datum.id || (id == datum.id && subId > datum.subId);
         }
         /**
          * Less or equal comparison operator.
@@ -318,7 +363,8 @@ namespace op
          */
         inline bool operator<=(const Datum& datum) const
         {
-            return id <= datum.id;
+            // return id <= datum.id;
+            return id < datum.id || (id == datum.id && subId <= datum.subId);
         }
         /**
          * Greater or equal comparison operator.
@@ -327,7 +373,8 @@ namespace op
          */
         inline bool operator>=(const Datum& datum) const
         {
-            return id >= datum.id;
+            // return id >= datum.id;
+            return id > datum.id || (id == datum.id && subId >= datum.subId);
         }
         /**
          * Equal comparison operator.
@@ -336,7 +383,8 @@ namespace op
          */
         inline bool operator==(const Datum& datum) const
         {
-            return id == datum.id;
+            // return id == datum.id;
+            return id == datum.id && subId == datum.subId;
         }
         /**
          * Not equal comparison operator.
@@ -345,15 +393,17 @@ namespace op
          */
         inline bool operator!=(const Datum& datum) const
         {
-            return id != datum.id;
+            // return id != datum.id;
+            return id != datum.id || subId != datum.subId;
         }
     };
 
     // Defines for Datum. Added here rather than in `macros.hpp` to avoid circular dependencies
-    #define DATUM_BASE_NO_PTR std::vector<Datum>
-    #define DATUM_BASE std::shared_ptr<DATUM_BASE_NO_PTR>
-    #define DEFINE_TEMPLATE_DATUM(templateName) template class OP_API templateName<DATUM_BASE>
-    #define COMPILE_TEMPLATE_DATUM(templateName) extern DEFINE_TEMPLATE_DATUM(templateName)
+    #define BASE_DATUM Datum
+    #define BASE_DATUMS std::vector<std::shared_ptr<BASE_DATUM>>
+    #define BASE_DATUMS_SH std::shared_ptr<BASE_DATUMS>
+    #define DEFINE_TEMPLATE_DATUM(templateName) template class OP_API templateName<BASE_DATUMS_SH>
+    #define COMPILE_TEMPLATE_DATUM(templateName) extern template class templateName<BASE_DATUMS_SH>
 }
 
 #endif // OPENPOSE_CORE_DATUM_HPP

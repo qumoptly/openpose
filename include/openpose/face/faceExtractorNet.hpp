@@ -1,7 +1,7 @@
 #ifndef OPENPOSE_FACE_FACE_EXTRACTOR_HPP
 #define OPENPOSE_FACE_FACE_EXTRACTOR_HPP
 
-#include <thread>
+#include <atomic>
 #include <opencv2/core/core.hpp> // cv::Mat
 #include <openpose/core/common.hpp>
 #include <openpose/core/enumClasses.hpp>
@@ -21,7 +21,7 @@ namespace op
          */
         explicit FaceExtractorNet(const Point<int>& netInputSize, const Point<int>& netOutputSize,
                                   const std::vector<HeatMapType>& heatMapTypes = {},
-                                  const ScaleMode heatMapScale = ScaleMode::ZeroToOne);
+                                  const ScaleMode heatMapScaleMode = ScaleMode::ZeroToOne);
 
         /**
          * Virtual destructor of the HandExtractor class.
@@ -40,7 +40,7 @@ namespace op
          * @param faceRectangles location of the faces in the image. It is a length-variable std::vector, where
          * each index corresponds to a different person in the image. Internally, a op::Rectangle<float>
          * (similar to cv::Rect for floating values) with the position of that face (or 0,0,0,0 if
-         * some face is missing, e.g. if a specific person has only half of the body inside the image).
+         * some face is missing, e.g., if a specific person has only half of the body inside the image).
          * @param cvInputData Original image in cv::Mat format and BGR format.
          */
         virtual void forwardPass(const std::vector<Rectangle<float>>& faceRectangles, const cv::Mat& cvInputData) = 0;
@@ -50,11 +50,15 @@ namespace op
         /**
          * This function returns the face keypoins. VERY IMPORTANT: use getFaceKeypoints().clone() if the keypoints are
          * going to be edited in a different thread.
-         * @return A Array with all the face keypoints. It follows the pose structure, i.e. the first dimension
+         * @return A Array with all the face keypoints. It follows the pose structure, i.e., the first dimension
          * corresponds to all the people in the image, the second to each specific keypoint, and the third one to
          * (x, y, score).
          */
         Array<float> getFaceKeypoints() const;
+
+        bool getEnabled() const;
+
+        void setEnabled(const bool enabled);
 
     protected:
         const Point<int> mNetOutputSize;
@@ -64,6 +68,8 @@ namespace op
         Array<float> mHeatMaps;
         const ScaleMode mHeatMapScaleMode;
         const std::vector<HeatMapType> mHeatMapTypes;
+        // Temporarily disable it
+        std::atomic<bool> mEnabled;
 
         virtual void netInitializationOnThread() = 0;
 

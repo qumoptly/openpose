@@ -17,15 +17,16 @@ namespace op
         return fileNameNoExtension + "." + dataFormatToString(dataFormat);
     }
 
-    void addKeypointsToJson(JsonOfstream& jsonOfstream,
-                            const std::vector<std::pair<Array<float>, std::string>>& keypointVector)
+    void addKeypointsToJson(
+        JsonOfstream& jsonOfstream, const std::vector<std::pair<Array<float>, std::string>>& keypointVector)
     {
         try
         {
-            // Security checks
+            // Sanity check
             for (const auto& keypointPair : keypointVector)
-                if (!keypointPair.first.empty() && keypointPair.first.getNumberDimensions() != 3 )
-                    error("keypointVector.getNumberDimensions() != 3.", __LINE__, __FUNCTION__, __FILE__);
+                if (!keypointPair.first.empty() && keypointPair.first.getNumberDimensions() != 3
+                    && keypointPair.first.getNumberDimensions() != 1)
+                    error("keypointVector.getNumberDimensions() != 1 && != 3.", __LINE__, __FUNCTION__, __FILE__);
             // Add people keypoints
             jsonOfstream.key("people");
             jsonOfstream.arrayOpen();
@@ -76,8 +77,8 @@ namespace op
         }
     }
 
-    void addCandidatesToJson(JsonOfstream& jsonOfstream,
-                             const std::vector<std::vector<std::array<float,3>>>& candidates)
+    void addCandidatesToJson(
+        JsonOfstream& jsonOfstream, const std::vector<std::vector<std::array<float,3>>>& candidates)
     {
         try
         {
@@ -85,7 +86,7 @@ namespace op
             jsonOfstream.key("part_candidates");
             jsonOfstream.arrayOpen();
             // Ger max numberParts
-            auto numberParts = candidates.size();
+            const auto numberParts = candidates.size();
             jsonOfstream.objectOpen();
             for (auto part = 0u ; part < numberParts ; part++)
             {
@@ -209,7 +210,7 @@ namespace op
     {
         try
         {
-            // Security checks
+            // Sanity checks
             if (dataFormat == DataFormat::Json && CV_MAJOR_VERSION < 3)
                 error(errorMessage, __LINE__, __FUNCTION__, __FILE__);
             if (cvMats.size() != cvMatNames.size())
@@ -247,11 +248,12 @@ namespace op
     {
         try
         {
-            // Security checks
+            // Sanity check
             if (dataFormat == DataFormat::Json && CV_MAJOR_VERSION < 3)
                 error(errorMessage, __LINE__, __FUNCTION__, __FILE__);
+            // File name
             const auto fileName = getFullName(fileNameNoExtension, dataFormat);
-            // Security checks
+            // Sanity check
             if (!existFile(fileName))
                 error("File to be read does not exist: " + fileName + ".", __LINE__, __FUNCTION__, __FILE__);
             // Read file
@@ -282,16 +284,15 @@ namespace op
         }
     }
 
-    void savePeopleJson(const Array<float>& keypoints,
-                        const std::vector<std::vector<std::array<float,3>>>& candidates,
-                        const std::string& keypointName, const std::string& fileName,
-                        const bool humanReadable)
+    void savePeopleJson(
+        const Array<float>& keypoints, const std::vector<std::vector<std::array<float,3>>>& candidates,
+        const std::string& keypointName, const std::string& fileName, const bool humanReadable)
     {
         try
         {
             savePeopleJson(
-                std::vector<std::pair<Array<float>, std::string>>{std::make_pair(keypoints, keypointName)}, candidates,
-                fileName, humanReadable
+                std::vector<std::pair<Array<float>, std::string>>{std::make_pair(keypoints, keypointName)},
+                candidates, fileName, humanReadable
             );
         }
         catch (const std::exception& e)
@@ -300,16 +301,18 @@ namespace op
         }
     }
 
-    void savePeopleJson(const std::vector<std::pair<Array<float>, std::string>>& keypointVector,
-                        const std::vector<std::vector<std::array<float,3>>>& candidates,
-                        const std::string& fileName, const bool humanReadable)
+    void savePeopleJson(
+        const std::vector<std::pair<Array<float>, std::string>>& keypointVector,
+        const std::vector<std::vector<std::array<float,3>>>& candidates, const std::string& fileName,
+        const bool humanReadable)
     {
         try
         {
-            // Security checks
+            // Sanity check
             for (const auto& keypointPair : keypointVector)
-                if (!keypointPair.first.empty() && keypointPair.first.getNumberDimensions() != 3 )
-                    error("keypointVector.getNumberDimensions() != 3.", __LINE__, __FUNCTION__, __FILE__);
+                if (!keypointPair.first.empty() && keypointPair.first.getNumberDimensions() != 3
+                    && keypointPair.first.getNumberDimensions() != 1)
+                    error("keypointVector.getNumberDimensions() != 1 && != 3.", __LINE__, __FUNCTION__, __FILE__);
             // Record frame on desired path
             JsonOfstream jsonOfstream{fileName, humanReadable};
             jsonOfstream.objectOpen();
@@ -318,7 +321,8 @@ namespace op
             // Version 1.0: Added face and hands (2-D)
             // Version 1.1: Added candidates
             // Version 1.2: Added body, face, and hands (3-D)
-            jsonOfstream.version("1.2");
+            // Version 1.3: Added person ID (for temporal consistency)
+            jsonOfstream.version("1.3");
             jsonOfstream.comma();
             // Add people keypoints
             addKeypointsToJson(jsonOfstream, keypointVector);

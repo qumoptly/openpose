@@ -6,12 +6,13 @@
 #define MULTI_LINE_STRING(ARG) #ARG
 
 #define CL_HPP_ENABLE_EXCEPTIONS
+
 #ifdef LOWER_CL_VERSION
     #define CL_HPP_MINIMUM_OPENCL_VERSION 120
     #define CL_HPP_TARGET_OPENCL_VERSION 120
 #else
-    #define CL_HPP_MINIMUM_OPENCL_VERSION 200
-    #define CL_HPP_TARGET_OPENCL_VERSION 200
+    #define CL_HPP_MINIMUM_OPENCL_VERSION 120
+    #define CL_HPP_TARGET_OPENCL_VERSION 120
 #endif
 
 typedef struct _cl_buffer_region cl_buffer_region;
@@ -20,6 +21,8 @@ namespace cl
 {
     class CommandQueue;
     class Kernel;
+    class Device;
+    class Context;
 }
 
 // Singleton structure
@@ -36,6 +39,10 @@ namespace op
 
         cl::CommandQueue& getQueue();
 
+        cl::Device& getDevice();
+
+        cl::Context& getContext();
+
         template <typename T>
         bool buildKernelIntoManager(const std::string& kernelName, const std::string& src = "", bool isFile = false);
 
@@ -49,6 +56,8 @@ namespace op
         }
       
         template <typename T> static void getBufferRegion(cl_buffer_region& region, const int origin, const int size);
+
+        int getAlignment();
 
         static std::string clErrorToString(int err);
 

@@ -15,7 +15,7 @@ namespace op
                         const float alphaKeypoint = FACE_DEFAULT_ALPHA_KEYPOINT,
                         const float alphaHeatMap = FACE_DEFAULT_ALPHA_HEAT_MAP);
 
-        ~FaceGpuRenderer();
+        virtual ~FaceGpuRenderer();
 
         void initializationOnThread();
 
@@ -23,6 +23,9 @@ namespace op
 
     private:
         float* pGpuFace; // GPU aux memory
+        float* pMaxPtr; // GPU aux memory
+        float* pMinPtr; // GPU aux memory
+        float* pScalePtr; // GPU aux memory
 
         DELETE_COPY(FaceGpuRenderer);
     };

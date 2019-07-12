@@ -6,8 +6,8 @@
 #include <openpose/core/keepTopNPeople.hpp>
 #include <openpose/pose/poseParameters.hpp>
 #include <openpose/pose/poseExtractorNet.hpp>
-#include <openpose/experimental/tracking/personIdExtractor.hpp>
-#include <openpose/experimental/tracking/personTracker.hpp>
+#include <openpose/tracking/personIdExtractor.hpp>
+#include <openpose/tracking/personTracker.hpp>
 
 namespace op
 {
@@ -27,6 +27,7 @@ namespace op
         void forwardPass(const std::vector<Array<float>>& inputNetData,
                          const Point<int>& inputDataSize,
                          const std::vector<double>& scaleRatios,
+                         const Array<float>& poseNetOutput = Array<float>{},
                          const long long frameId = -1ll);
 
         // PoseExtractorNet functions

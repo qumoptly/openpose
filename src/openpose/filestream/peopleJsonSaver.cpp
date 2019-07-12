@@ -8,9 +8,14 @@ namespace op
     {
     }
 
-    void PeopleJsonSaver::save(const std::vector<std::pair<Array<float>, std::string>>& keypointVector,
-                               const std::vector<std::vector<std::array<float,3>>>& candidates,
-                               const std::string& fileName, const bool humanReadable) const
+    PeopleJsonSaver::~PeopleJsonSaver()
+    {
+    }
+
+    void PeopleJsonSaver::save(
+        const std::vector<std::pair<Array<float>, std::string>>& keypointVector,
+        const std::vector<std::vector<std::array<float,3>>>& candidates, const std::string& fileName,
+        const bool humanReadable) const
     {
         try
         {

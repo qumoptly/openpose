@@ -5,19 +5,21 @@ namespace op
 {
     HandExtractorNet::HandExtractorNet(const Point<int>& netInputSize, const Point<int>& netOutputSize,
                                        const unsigned short numberScales, const float rangeScales,
-                                       const std::vector<HeatMapType>& heatMapTypes, const ScaleMode heatMapScale) :
+                                       const std::vector<HeatMapType>& heatMapTypes,
+                                       const ScaleMode heatMapScaleMode) :
         mMultiScaleNumberAndRange{std::make_pair(numberScales, rangeScales)},
         mNetOutputSize{netOutputSize},
         mHandImageCrop{{1, 3, mNetOutputSize.y, mNetOutputSize.x}},
-        mHeatMapScaleMode{heatMapScale},
-        mHeatMapTypes{heatMapTypes}
+        mHeatMapScaleMode{heatMapScaleMode},
+        mHeatMapTypes{heatMapTypes},
+        mEnabled{true}
     {
         try
         {
             // Error check
             if (mHeatMapScaleMode != ScaleMode::ZeroToOne && mHeatMapScaleMode != ScaleMode::PlusMinusOne
                 && mHeatMapScaleMode != ScaleMode::UnsignedChar)
-                error("The ScaleMode heatMapScale must be ZeroToOne, PlusMinusOne or UnsignedChar.",
+                error("The ScaleMode heatMapScaleMode must be ZeroToOne, PlusMinusOne or UnsignedChar.",
                       __LINE__, __FUNCTION__, __FILE__);
             checkE(netOutputSize.x, netInputSize.x, "Net input and output size must be equal.",
                    __LINE__, __FUNCTION__, __FILE__);
@@ -55,6 +57,20 @@ namespace op
         }
     }
 
+    std::array<Array<float>, 2> HandExtractorNet::getHeatMaps() const
+    {
+        try
+        {
+            checkThread();
+            return mHeatMaps;
+        }
+        catch (const std::exception& e)
+        {
+            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
+            return std::array<Array<float>, 2>(); // Parentheses instead of braces to avoid error in GCC 4.8
+        }
+    }
+
     std::array<Array<float>, 2> HandExtractorNet::getHandKeypoints() const
     {
         try
@@ -69,17 +85,28 @@ namespace op
         }
     }
 
-    std::array<Array<float>, 2> HandExtractorNet::getHeatMaps() const
+    bool HandExtractorNet::getEnabled() const
     {
         try
         {
-            checkThread();
-            return mHeatMaps;
+            return mEnabled;
         }
         catch (const std::exception& e)
         {
             error(e.what(), __LINE__, __FUNCTION__, __FILE__);
-            return std::array<Array<float>, 2>(); // Parentheses instead of braces to avoid error in GCC 4.8
+            return false;
+        }
+    }
+
+    void HandExtractorNet::setEnabled(const bool enabled)
+    {
+        try
+        {
+            mEnabled = enabled;
+        }
+        catch (const std::exception& e)
+        {
+            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
         }
     }
 

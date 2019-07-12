@@ -13,6 +13,8 @@ namespace op
     public:
         explicit WGui(const std::shared_ptr<Gui>& gui);
 
+        virtual ~WGui();
+
         void initializationOnThread();
 
         void workConsumer(const TDatums& tDatums);
@@ -35,6 +37,11 @@ namespace op
     template<typename TDatums>
     WGui<TDatums>::WGui(const std::shared_ptr<Gui>& gui) :
         spGui{gui}
+    {
+    }
+
+    template<typename TDatums>
+    WGui<TDatums>::~WGui()
     {
     }
 
@@ -67,11 +74,11 @@ namespace op
                 if (!tDatums->empty())
                 {
                     std::vector<cv::Mat> cvOutputDatas;
-                    for (auto& tDatum : *tDatums)
-                        cvOutputDatas.emplace_back(tDatum.cvOutputData);
+                    for (auto& tDatumPtr : *tDatums)
+                        cvOutputDatas.emplace_back(tDatumPtr->cvOutputData);
                     spGui->setImage(cvOutputDatas);
                 }
-                // Refresh GUI
+                // Refresh/update GUI
                 spGui->update();
                 // Profiling speed
                 if (!tDatums->empty())
