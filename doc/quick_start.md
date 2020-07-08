@@ -3,18 +3,28 @@ OpenPose - Quick Start
 
 ## Contents
 1. [Quick Start](#quick-start)
-    1. [Running on Video](#running-on-video)
-    2. [Running on Webcam](#running-on-webcam)
-    3. [Running on Images](#running-on-images)
-    4. [Maximum Accuracy Configuration](#maximum-accuracy-configuration)
-    5. [3-D Reconstruction](#3-d-reconstruction)
-    6. [Tracking](#tracking)
+    1. [BODY_25 vs. COCO vs. MPI Models](#body-25-vs-coco-vs-mpi-models)
+    2. [Running on Video](#running-on-video)
+    3. [Running on Webcam](#running-on-webcam)
+    4. [Running on Images](#running-on-images)
+    5. [Maximum Accuracy Configuration](#maximum-accuracy-configuration)
+    6. [3-D Reconstruction](#3-d-reconstruction)
+    7. [Tracking](#tracking)
 2. [Expected Visual Results](#expected-visual-results)
 
 
 
 ## Quick Start
 Check that the library is working properly by running any of the following commands on any command-line interface program. In Ubuntu, Mac, and other Unix systems, use any command-line interface, such as `Terminal` or `Terminator`. In Windows, open the `PowerShell` (recommended) or Windows Command Prompt (CMD). They can be open by pressing the Windows button + X, and then A. Feel free to watch any Youtube video tutorial if you are not familiar with these non-GUI tools. Make sure that you are in the **root directory of the project** (i.e., in the OpenPose folder, not inside `build/` nor `windows/` nor `bin/`). In addition, `examples/media/video.avi` and `examples/media` do exist, no need to change the paths.
+
+
+
+### BODY_25 vs. COCO vs. MPI Models
+The BODY_25 model (`--model_pose BODY_25`) includes both body and foot keypoints and it is based in [OpenPose: Realtime Multi-Person 2D Pose Estimation using Part Affinity Fields](https://arxiv.org/abs/1812.08008). COCO and MPI models are slower, less accurate, and do not contain foot keypoints. They are based in our older paper [Realtime Multi-Person 2D Pose Estimation using Part Affinity Fields](https://arxiv.org/abs/1611.08050). We highly recommend only using the BODY_25 model.
+
+There is an exception, for CPU version, the COCO and MPI models seems to be faster. Accuracy is still better for the BODY_25 model.
+
+
 
 ### Running on Video
 ```
@@ -83,11 +93,18 @@ build\x64\Release\OpenPoseDemo.exe --image_dir examples\media\ --face --hand
 
 
 ### Maximum Accuracy Configuration
-This command provides the most accurate results we have been able to achieve for body, hand and face keypoint detection. However, this command will need ~10.5 GB of GPU memory (6.7 GB for COCO model) and runs at ~2 FPS on a Titan X for the body-foot model (1 FPS for COCO).
+This command provides the most accurate results we have been able to achieve for body, hand and face keypoint detection.
 
-- **Note 1:** Increasing `--net_resolution` will highly reduce the frame rate and increase latency, while it might increase the accuracy. However, this accuracy increase is not guaranteed in all scenarios, required a more detailed analysis for each particular scenario. E.g., it will work better for images with very small people, but usually worse for people taking a big ratio of the image. Thus, we recommend to follow the commands below for maximum accuracy in most cases for both big and small-size people.
-- **Note 2: Do not use this configuration for MPII model**, its accuracy might be harmed by this multi-scale setting. This configuration is optimal only for COCO and COCO-extended (e.g., the default BODY_25) models.
+However:
+- This will not work on CPU given the huge ammount of memory required. Your only option with CPU-only versions is to manually crop the people to fit the whole area of the image that is fed into OpenPose.
+- It will also need ~10.5 GB of GPU memory for body-foot (BODY_25) model (~6.7 GB for COCO model).
+- This requires GPUs like Titan X, Titan XP, some Quadro models, P100, V100, etc.
+- Including hands and face will require >= 16GB GPUs (so the 12 GB GPUs like Titan X and XPs will no longer work).
+- This command runs at ~2 FPS on a Titan X for the body-foot model (~1 FPS for COCO).
+- Increasing `--net_resolution` will highly reduce the frame rate and increase latency, while it might increase the accuracy. However, this accuracy increase is not guaranteed in all scenarios, required a more detailed analysis for each particular scenario. E.g., it will work better for images with very small people, but usually worse for people taking a big ratio of the image. Thus, we recommend to follow the commands below for maximum accuracy in most cases for both big and small-size people.
+- **Do not use this configuration for MPII model**, its accuracy might be harmed by this multi-scale setting. This configuration is optimal only for COCO and COCO-extended (e.g., the default BODY_25) models.
 
+**Method overview:**
 ```
 # Ubuntu and Mac: Body
 ./build/examples/openpose/openpose.bin --net_resolution "1312x736" --scale_number 4 --scale_gap 0.25
